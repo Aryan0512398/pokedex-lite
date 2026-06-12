@@ -1,65 +1,168 @@
-import Image from "next/image";
+"use client";
+
+import SearchBar from "@/components/SearchBar";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { usePokemon } from "@/hooks/usePokemon";
+import PokemonCard from "@/components/PokemonCard";
+import { usePokemonByType } from "@/hooks/usePokemonByType";
+import TypeFilter from "@/components/TypeFilter";
+import { useFavorites } from "@/hooks/useFavorites";
+import PokemonCardSkeleton from "@/components/PokemonCardSkeleton";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
+  const [showFavorites, setShowFavorites] = useState(false);
+
+  const { favorites } = useFavorites();
+
+  const { data, isLoading, error } = usePokemon(page);
+  const { data: typeData } = usePokemonByType(selectedType);
+
+  const allPokemon =
+    selectedType === "all"
+      ? data?.results || []
+      : typeData?.map((p: any) => ({
+          name: p.pokemon.name,
+        })) || [];
+
+  const filteredPokemon = allPokemon.filter((pokemon: { name: string }) => {
+    const matchesSearch = pokemon.name
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesFavorite = !showFavorites || favorites.includes(pokemon.name);
+
+    return matchesSearch && matchesFavorite;
+  });
+  const ITEMS_PER_PAGE = 20;
+
+  const startIndex = (page - 1) * ITEMS_PER_PAGE;
+
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+
+  const paginatedPokemon =
+    selectedType === "all"
+      ? filteredPokemon
+      : filteredPokemon.slice(startIndex, endIndex);
+
+  const totalPages =
+    selectedType === "all"
+      ? 100
+      : Math.max(1, Math.ceil(filteredPokemon.length / ITEMS_PER_PAGE));
+  useEffect(() => {
+    setPage(1);
+  }, [selectedType, search, showFavorites]);
+  if (isLoading) {
+    return (
+      <main className="min-h-screen p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {Array.from({
+              length: 20,
+            }).map((_, i) => (
+              <PokemonCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-red-500 text-center">Error loading Pokemon</div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-100">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold">Pokedex Lite</h1>
+
+          <p className="text-muted-foreground mt-2 text-lg">
+            Search, filter and explore Pokemon
+          </p>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            Showing {paginatedPokemon.length} Pokemon
+          </p>
+        </div>
+
+        <SearchBar search={search} setSearch={setSearch} />
+
+        <TypeFilter
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
+        />
+
+        <button
+          onClick={() => setShowFavorites(!showFavorites)}
+          className="mb-6 rounded-lg border px-4 py-2 hover:bg-slate-100 transition"
+        >
+          {showFavorites ? "Show All" : "Show Favorites"}
+        </button>
+
+        {filteredPokemon.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="text-6xl mb-4">🔍</div>
+
+            <h2 className="text-2xl font-bold">No Pokemon Found</h2>
+
+            <p className="text-muted-foreground mt-2">
+              Try another search term or filter.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {paginatedPokemon.map(
+              (
+                pokemon: {
+                  name: string;
+                },
+                index: number,
+              ) => (
+                <PokemonCard
+                  key={pokemon.name}
+                  name={pokemon.name}
+                  image={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${
+                    startIndex + index + 1
+                  }.png`}
+                />
+              ),
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-4 mt-10">
+          <Button
+            variant="outline"
+            disabled={page === 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Previous
+          </Button>
+
+          <div className="flex items-center font-semibold">
+            Page {page} of {totalPages}
+          </div>
+
+          <Button
+            disabled={selectedType !== "all" && page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+
+      <footer className="mt-16 py-6 text-center text-sm text-muted-foreground">
+        Built with Next.js, TypeScript, Tailwind CSS and PokeAPI
+      </footer>
+    </main>
   );
 }
