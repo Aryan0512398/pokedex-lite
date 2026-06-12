@@ -4,11 +4,11 @@ A modern and responsive Pokédex web application built using **Next.js**, **Type
 
 ## 🚀 Live Demo
 
-🔗 **Deployment URL:** 
+🔗 **Deployment URL:** https://pokedex-lite-flax.vercel.app/
 
 ## 📂 GitHub Repository
 
-🔗 **Repository:** 
+🔗 **Repository:** https://github.com/Aryan0512398/pokedex-lite
 
 ---
 
@@ -145,21 +145,6 @@ Endpoints used:
 * `/type/{type}`
 
 ---
-
-## 🚧 Challenges Faced
-
-### Type Filtering
-
-PokéAPI provides Pokémon type data through separate endpoints. A dedicated hook was created to fetch Pokémon by type while maintaining compatibility with search and favorites functionality.
-
-### Favorites Persistence
-
-Favorites were implemented using Local Storage to ensure user preferences remain available after page refreshes.
-
-### Performance Optimization
-
-React Query was used for caching API responses and reducing unnecessary network requests.
-
 ---
 
 ## 🔮 Future Improvements
@@ -169,7 +154,6 @@ React Query was used for caching API responses and reducing unnecessary network 
 * Pokémon Comparison Feature
 * OAuth Authentication
 * Advanced Filtering
-* Server Side Rendering Optimizations
 
 ---
 
